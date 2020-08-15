@@ -1,28 +1,67 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/writeas/go-ghost"
-	"github.com/writeas/go-ghost/admin"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
+
+	"github.com/philips/go-ghost"
+	"github.com/writeas/go-mobiledoc"
 )
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Fprintf(os.Stderr, "usage: sample GHOST_URL API_KEY\n")
+	if len(os.Args) != 4 {
+		fmt.Fprintf(os.Stderr, "usage: sample GHOST_URL API_KEY POST_ID_TO_EDIT\n")
 		os.Exit(1)
 	}
 
 	url := os.Args[1]
 	apiKey := os.Args[2]
+	id := os.Args[3]
 
 	c := ghost.NewClient(url, apiKey)
-	err := admin.AddPost(c, ghost.PostParams{
-		Title:    ghost.String("Posting via Go"),
-		Markdown: ghost.String(`This is a **test post** made with the [go-ghost](https://github.com/writeas/go-ghost) library.`),
-		Status:   ghost.String("published"),
-	})
+
+	resp, err := c.Request(http.MethodGet, c.EndpointForID("admin", "posts", id), nil)
 	if err != nil {
-		fmt.Printf("AddPost: %v\n", err)
+		log.Fatalf("get: %v", err)
 	}
+	defer resp.Body.Close()
+
+	pr := &ghost.PostRequest{}
+	err = json.NewDecoder(resp.Body).Decode(pr)
+	if err != nil {
+		log.Fatalf("decode: %v", err)
+	}
+
+	fmt.Printf("title: %v Updated At: %v\n", *pr.Posts[0].Title, pr.Posts[0].UpdatedAt.String())
+
+	md := `This is a **test post** made with the [go-ghost](https://github.com/writeas/go-ghost) library.`
+
+	mobdoc, err := json.Marshal(mobiledoc.FromMarkdown(md))
+	if err != nil {
+		log.Fatalf("decode: %v", err)
+	}
+
+	_ = mobdoc
+
+	presp := ghost.PostRequest{
+		Posts: []ghost.Post{
+			ghost.Post{
+				Title:     ghost.String("Asset Transparency Log Metrics"),
+				UpdatedAt: pr.Posts[0].UpdatedAt,
+				Mobiledoc: ghost.String(string(mobdoc)),
+			}},
+	}
+
+	resp, err = c.Request(http.MethodPut, c.EndpointForID("admin", "posts", id), presp)
+	if err != nil {
+		fmt.Printf("UpdatePost: %v\n", err)
+	}
+	defer resp.Body.Close()
+
+	rbody, err := ioutil.ReadAll(resp.Body)
+	fmt.Printf("response: %s\n", rbody)
 }
