@@ -1,4 +1,4 @@
-module github.com/writeas/go-ghost
+module github.com/philips/go-ghost
 
 go 1.12
 
