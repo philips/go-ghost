@@ -24,6 +24,7 @@ func main() {
 
 	c := ghost.NewClient(url, apiKey)
 
+	// 1. Get the UpdatedAt field which is required for a PUT
 	resp, err := c.Request(http.MethodGet, c.EndpointForID("admin", "posts", id), nil)
 	if err != nil {
 		log.Fatalf("get: %v", err)
@@ -35,17 +36,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("decode: %v", err)
 	}
-
 	fmt.Printf("title: %v Updated At: %v\n", *pr.Posts[0].Title, pr.Posts[0].UpdatedAt.String())
 
+	// 2. Generate new Post content
 	md := `This is a **test post** made with the [go-ghost](https://github.com/writeas/go-ghost) library.`
 
 	mobdoc, err := json.Marshal(mobiledoc.FromMarkdown(md))
 	if err != nil {
 		log.Fatalf("decode: %v", err)
 	}
-
-	_ = mobdoc
 
 	presp := ghost.PostRequest{
 		Posts: []ghost.Post{
@@ -56,6 +55,7 @@ func main() {
 			}},
 	}
 
+	// 3. PUT the new Post contents to the ID
 	resp, err = c.Request(http.MethodPut, c.EndpointForID("admin", "posts", id), presp)
 	if err != nil {
 		fmt.Printf("UpdatePost: %v\n", err)
