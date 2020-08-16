@@ -25,7 +25,8 @@ type Client struct {
 // defaultHTTPTimeout is the default http.Client timeout.
 const defaultHTTPTimeout = 10 * time.Second
 
-// NewClient creates a new API client.
+// NewClient creates a new Ghost API client. URL and Key are explained in
+// the Ghost API docs: https://ghost.org/docs/api/v2/content/#authentication
 func NewClient(url, key string) *Client {
 	httpClient := &http.Client{Timeout: defaultHTTPTimeout}
 	return &Client{
@@ -37,6 +38,9 @@ func NewClient(url, key string) *Client {
 	}
 }
 
+// generateJWT follows the Token generation alogrithm outlined in Ghost token authentication.
+//
+// https://ghost.org/docs/api/v2/admin/#token-authentication
 func (c *Client) generateJWT() (string, error) {
 	keyParts := strings.Split(c.Key, ":")
 	if len(keyParts) != 2 {
@@ -64,6 +68,11 @@ func (c *Client) generateJWT() (string, error) {
 	return string(token), nil
 }
 
+// Request makes an API request to Ghost with the given HTTP method, HTTP Path,
+// and data marshaled to JSON in the body. The JSON object needs to follow the
+// structure of all Ghost Request/Response objects.
+//
+// https://ghost.org/docs/api/v2/admin/#json-format
 func (c *Client) Request(method, path string, data interface{}) (*http.Response, error) {
 	b := &bytes.Buffer{}
 	json.NewEncoder(b).Encode(data)
@@ -95,10 +104,12 @@ func (c *Client) Request(method, path string, data interface{}) (*http.Response,
 	return c.client.Do(r)
 }
 
+// EndpointForID is a HTTP Path slug generator for a Ghost resource. e.g. "admin", "post", "abc123".
 func (c *Client) EndpointForID(api, resource, id string) string {
 	return fmt.Sprintf("/%s/api/%s/%s/%s/%s/", c.GhostPath, c.Version, api, resource, id)
 }
 
+// EndpointForID is a HTTP Path slug generator for a Ghost resource via its slug. e.g. "admin", "post", "my-new-post".
 func (c *Client) EndpointForSlug(api, resource, slug string) string {
 	return fmt.Sprintf("/%s/api/%s/%s/%s/slug/%s/", c.GhostPath, c.Version, api, resource, slug)
 }
