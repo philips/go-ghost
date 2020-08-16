@@ -1,6 +1,6 @@
 # go-ghost
 
-[![GoDoc](https://godoc.org/github.com/writeas/go-ghost?status.svg)](https://godoc.org/github.com/writeas/go-ghost)
+[![GoDoc](https://godoc.org/github.com/philips/go-ghost?status.svg)](https://godoc.org/github.com/philips/go-ghost)
 
 Simple library that provides convienence functions to handle authentication and REST slug building for the ghost.io API.
 
